@@ -1,0 +1,9 @@
+# 关键：脚本必须在仓库里存 LF，否则 Linux 上 bash 报 "\r: command not found"
+* text=auto eol=lf
+
+# 二进制素材，不要做任何换行转换
+*.jpg binary
+*.png binary
+*.wav binary
+*.mp3 binary
+*.mp4 binary
