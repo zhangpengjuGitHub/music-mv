@@ -258,6 +258,8 @@ def main():
     ap.add_argument("--prefix", default="it_test")
     ap.add_argument("--width", type=int, default=832)
     ap.add_argument("--height", type=int, default=480)
+    ap.add_argument("--swap", type=int, default=36,
+                    help="WanVideoBlockSwap blocks_to_swap（T4 16G 必须拉满）")
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--workflow", default=None)
     a = ap.parse_args()
@@ -269,6 +271,13 @@ def main():
     oi = get("/object_info")
     api = build(oi, ui, a.audio, a.image, a.seconds, a.steps, a.seed, a.prefix,
                 a.width, a.height)
+    setv = lambda nid, **kv: api[str(nid)]["inputs"].update(kv) if str(nid) in api else None
+    if "134" in api:
+        setv(134, blocks_to_swap=a.swap, offload_txt_emb=True,
+             offload_img_emb=True, use_non_blocking=True)
+        print("swap=%d offload=on" % a.swap)
+    else:
+        print("WARN: 工作流里没有 WanVideoBlockSwap 节点")
     out = os.path.join(W, "it_api.json")
     json.dump(api, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("nodes=%d -> %s" % (len(api), out))
