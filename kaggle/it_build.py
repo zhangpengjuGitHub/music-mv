@@ -106,7 +106,8 @@ def combos(oi, t, key):
 
 
 def choose(oi, t, key, prefer, must_all=(), must_any=()):
-    opts = combos(oi, t, key)
+    opts = [o for o in combos(oi, t, key)
+            if ".cache" not in o and not o.lower().startswith("put_")]
     for p in prefer:
         for o in opts:
             n = o.lower()
@@ -184,12 +185,14 @@ def build(oi, ui, audio, image, seconds, steps, seed, prefix, w, h, max_gb_left=
         setv(120, model=it)
     else:
         print("WARN: MultiTalkModelLoader 找不到 InfiniteTalk 模型")
-    te = choose(oi, "WanVideoTextEncodeCached", "text_encoder", ["fp8_e4m3fn"], ("umt5",))
+    te = choose(oi, "WanVideoTextEncodeCached", "model_name", ["fp8_e4m3fn"], ("umt5",))
     if te:
-        setv(241, text_encoder=te)
-    vae = choose(oi, "WanVideoVAELoader", "model", ["bf16"], ("vae",))
+        setv(241, model_name=te, precision="fp8_e4m3fn")
+    else:
+        print("WARN: 找不到 umt5 文本编码器")
+    vae = choose(oi, "WanVideoVAELoader", "model_name", ["bf16"], ("vae",))
     if vae:
-        setv(129, model=vae)
+        setv(129, model_name=vae)
     cv = choose(oi, "CLIPVisionLoader", "clip_name", ["clip_vision_h"])
     if cv:
         setv(238, clip_name=cv)
