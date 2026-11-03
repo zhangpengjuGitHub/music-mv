@@ -261,8 +261,8 @@ def main():
     ap.add_argument("--height", type=int, default=480)
     ap.add_argument("--swap", type=int, default=20,
                     help="WanVideoBlockSwap blocks_to_swap")
-    ap.add_argument("--ctx", type=int, default=81,
-                    help="context_frames：窗口化推理，显存与总时长解耦（必须 4k+1）")
+    ap.add_argument("--ctx", type=int, default=0,
+                    help="context_frames；0=关闭（MultiTalk 本身就是循环生成，用了会报错）")
     ap.add_argument("--t5dev", default="cuda:1",
                     help="文本编码器 T5(6.27G) 放哪张卡，默认第二张")
     ap.add_argument("--dry", action="store_true")
@@ -300,7 +300,17 @@ def main():
             print("node %s save_output=True" % k)
     # 窗口化推理：把长视频切成 81 帧一段，显存只跟窗口大小有关，不跟总时长有关。
     # 16G 的 T4 想跑 17s/832x480（425 帧）全序列必然 OOM（VAE encode 一次性吃 20G+）
-    if "WanVideoContextOptions" in oi and "128" in api:
+    # tiled VAE：multitalk_loop 里 vae.encode(..., tiled=tiled_vae) 的开关来自
+    # image_embeds["tiled_vae"]，源头就是图片编码节点的 tiled_vae 入参。
+    # 不打开的话 425 帧 @832x480 一次性 encode 会直接吃爆 16G。
+    cls192 = api.get("192", {}).get("class_type")
+    if cls192 and "tiled_vae" in names_of(oi, cls192):
+        setv(192, tiled_vae=True)
+        print("tiled_vae=True on 192 (%s)" % cls192)
+    else:
+        print("WARN: 节点 192 无 tiled_vae，长视频必 OOM")
+
+    if a.ctx > 0 and "WanVideoContextOptions" in oi and "128" in api:
         api["900"] = {
             "class_type": "WanVideoContextOptions",
             "inputs": {"context_schedule": "uniform_standard",
