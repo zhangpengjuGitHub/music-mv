@@ -17,8 +17,10 @@ OUT = "/kaggle/working/progress.txt"
 
 def last_line():
     try:
+        # tail -c 会从多字节字符中间切开，必须 errors=replace，否则整行变成 ERR
         d = subprocess.run(["tail", "-c", "800", LOG],
-                           capture_output=True, text=True).stdout
+                           capture_output=True, text=True,
+                           errors="replace").stdout
     except Exception as e:
         return "ERR %s" % e
     # tqdm 用 \r 原地刷新，必须切成独立行才能拿到最新一条
