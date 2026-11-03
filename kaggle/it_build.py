@@ -263,6 +263,8 @@ def main():
                     help="WanVideoBlockSwap blocks_to_swap")
     ap.add_argument("--ctx", type=int, default=81,
                     help="context_frames：窗口化推理，显存与总时长解耦（必须 4k+1）")
+    ap.add_argument("--t5dev", default="cuda:1",
+                    help="文本编码器 T5(6.27G) 放哪张卡，默认第二张")
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--workflow", default=None)
     a = ap.parse_args()
