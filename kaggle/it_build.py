@@ -37,8 +37,23 @@ def get(path):
 def post(path, payload):
     req = urllib.request.Request(HOST + path, data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=180) as r:
-        return json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=180) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        try:
+            j = json.loads(body)
+            errs = j.get("node_errors") or {}
+            out = []
+            for nid, info in list(errs.items())[:8]:
+                es = ["%s(%s)" % (x.get("message", ""), str(x.get("details", ""))[:100])
+                      for x in info.get("errors", [])][:2]
+                out.append("node %s[%s]: %s" % (nid, info.get("class_type"), "; ".join(es)))
+            print("PROMPT_ERROR " + (" || ".join(out) if out else body[:900]))
+        except Exception:
+            print("PROMPT_ERROR_RAW " + body[:900])
+        sys.exit(3)
 
 
 class Wf:
