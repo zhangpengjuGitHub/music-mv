@@ -146,18 +146,33 @@ def build(oi, ui, audio, image, seconds, steps, seed, prefix, w, h, max_gb_left=
         ins = {}
         wv = n.get("widgets_values")
         converted = {i["widget"]["name"] for i in (n.get("inputs") or []) if "widget" in i}
+        CTRL = {"fixed", "randomize", "increment", "decrement"}
         if isinstance(wv, dict):
             for k, v in wv.items():
                 if k in (names_of(oi, t) or []):
                     ins[k] = v
         else:
-            wv = wv or []
-            wv = [x for x in wv if not (isinstance(x, str) and x in
-                                        ("randomize", "fixed", "increment", "decrement"))]
-            nm = [x for x in names_of(oi, t) if x not in converted]
-            for k, v in zip(nm, wv):
-                if v is not None:
-                    ins[k] = v
+            wv = list(wv or [])
+            all_names = names_of(oi, t)
+            i = 0
+            for name in all_names:
+                if name in converted:
+                    # 该 widget 已被链接覆盖，但它的值仍占 widgets_values 的一个位置
+                    if i < len(wv):
+                        i += 1
+                    if i < len(wv) and isinstance(wv[i], str) and wv[i] in CTRL:
+                        i += 1
+                    continue
+                if i >= len(wv):
+                    break
+                val = wv[i]
+                i += 1
+                if isinstance(val, str) and val in CTRL:
+                    continue
+                if val is not None:
+                    ins[name] = val
+                if i < len(wv) and isinstance(wv[i], str) and wv[i] in CTRL:
+                    i += 1
         for i in n.get("inputs") or []:
             if "widget" in i:
                 continue
@@ -180,7 +195,8 @@ def build(oi, ui, audio, image, seconds, steps, seed, prefix, w, h, max_gb_left=
             A[str(nid)]["inputs"].update(kv)
 
     setv(284, image=image)
-    setv(281, width=w, height=h)
+    setv(281, width=w, height=h, upscale_method="lanczos", keep_proportion="resize",
+         crop_position="center", pad_color="0, 0, 0", divisible_by=16, device="cpu")
     setv(125, audio=audio)
     setv(245, value=w)
     setv(246, value=h)
@@ -188,6 +204,15 @@ def build(oi, ui, audio, image, seconds, steps, seed, prefix, w, h, max_gb_left=
     setv(128, steps=steps, seed=seed)
     setv(192, width=w, height=h)
     setv(131, filename_prefix=prefix, frame_rate=25)
+
+    lora = choose(oi, "WanVideoLoraSelect", "lora", ["lightx2v", "rank64"], ())
+    if lora:
+        setv(138, lora=lora)
+    else:
+        print("WARN: loras 下拉为空，去掉加速 LoRA（步数建议加到 20+）")
+        api.pop("138", None)
+        if "122" in A:
+            A["122"]["inputs"].pop("lora", None)
 
     # 模型自动挑
     m = choose(oi, "WanVideoModelLoader", "model", ["Q4_K_M", "Q3_K_M"], ("14b", "i2v"))
