@@ -187,7 +187,8 @@ def build(oi, ui, audio, image, seconds, steps, seed, prefix, w, h, max_gb_left=
         api[str(nid)] = {"class_type": t, "inputs": ins}
 
     # ---- 覆写 ----
-    frames = int(round(seconds * 25))
+    # Wan 系列要求 num_frames = 4k+1，否则时间压缩维度对不上会直接报错
+    frames = int(round(seconds * 25 / 4)) * 4 + 1
     A = api
 
     def setv(nid, **kv):
