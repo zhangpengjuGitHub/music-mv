@@ -174,8 +174,8 @@ def build(oi, ui, audio, image, seconds, steps, seed, prefix, w, h, max_gb_left=
                 if i < len(wv) and isinstance(wv[i], str) and wv[i] in CTRL:
                     i += 1
         for i in n.get("inputs") or []:
-            if "widget" in i:
-                continue
+            if i.get("link") is None:
+                continue  # 纯 widget 或未连接：值已由 widgets_values 提供
             key = (nid, i["name"])
             if key in REWIRE:
                 ins[i["name"]] = [str(REWIRE[key][0]), REWIRE[key][1]]
@@ -227,7 +227,7 @@ def build(oi, ui, audio, image, seconds, steps, seed, prefix, w, h, max_gb_left=
         print("WARN: MultiTalkModelLoader 找不到 InfiniteTalk 模型")
     te = choose(oi, "WanVideoTextEncodeCached", "model_name", ["fp8_e4m3fn"], ("umt5",))
     if te:
-        setv(241, model_name=te, precision="fp8_e4m3fn")
+        setv(241, model_name=te, precision="bf16", quantization="fp8_e4m3fn")
     else:
         print("WARN: 找不到 umt5 文本编码器")
     vae = choose(oi, "WanVideoVAELoader", "model_name", ["bf16"], ("vae",))
