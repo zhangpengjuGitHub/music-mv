@@ -21,7 +21,8 @@ HOST = "http://127.0.0.1:8188"
 W = "/kaggle/working"
 WIDGET_TYPES = {"INT", "FLOAT", "STRING", "BOOLEAN", "COMBO"}
 SKIP_TYPES = {"Note", "MarkdownNote", "PreviewAny", "SetNode", "GetNode",
-              "Reroute", "RerouteNode", "WanVideoTorchCompileSettings"}
+              "Reroute", "RerouteNode", "WanVideoTorchCompileSettings",
+              "MelBandRoFormerSampler", "MelBandRoFormerModelLoader"}
 # 旁路：节点类型 -> 用它的哪个输入替代它的输出
 BYPASS = {"MelBandRoFormerSampler": "audio", "MelBandRoFormerModelLoader": None}
 # 显式改接：(目标节点, 输入名) -> (源节点, 输出槽)
