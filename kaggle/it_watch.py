@@ -25,14 +25,28 @@ def last_line():
     lines = [l.strip() for l in d.replace("\r", "\n").split("\n") if l.strip()]
     if not lines:
         return "(empty)"
-    return lines[-1][:95]
+    return lines[-1][:78]
+
+
+def gpu():
+    """实测显存/利用率。日志是块缓冲的会滞后，GPU 是唯一实时的信号。"""
+    try:
+        r = subprocess.run(["nvidia-smi", "--query-gpu=memory.used,utilization.gpu",
+                            "--format=csv,noheader,nounits"],
+                           capture_output=True, text=True).stdout
+        rows = [x.strip().replace(", ", "/") for x in r.strip().split("\n") if x.strip()]
+        return " ".join("g%d:%sMiB@%s%%" % (i, v.split("/")[0], v.split("/")[1])
+                        for i, v in enumerate(rows))
+    except Exception as e:
+        return "ERR"
 
 
 def main():
     f = open(OUT, "a", buffering=1)
     f.write("=== watch start %s ===\n" % datetime.datetime.now().strftime("%H:%M:%S"))
     while True:
-        f.write("%s | %s\n" % (datetime.datetime.now().strftime("%H:%M:%S"), last_line()))
+        f.write("%s | %s | %s\n" % (datetime.datetime.now().strftime("%H:%M:%S"),
+                                    gpu(), last_line()))
         time.sleep(30)
 
 
