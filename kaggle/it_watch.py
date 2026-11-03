@@ -43,12 +43,22 @@ def gpu():
         return "ERR"
 
 
+def harvest():
+    """成片一旦出现就复制到 /kaggle/working 根目录（用户可直接从 Output 面板下载）。
+    cp -n 不覆盖，可反复执行。"""
+    cmd = ("find /kaggle/working/ComfyUI/output /kaggle/working/ComfyUI/temp "
+           "-name '*.mp4' -newermt '-12 hours' "
+           "-exec cp -n {} /kaggle/working/ \\; 2>/dev/null")
+    subprocess.run(cmd, shell=True)
+
+
 def main():
     f = open(OUT, "a", buffering=1)
     f.write("=== watch start %s ===\n" % datetime.datetime.now().strftime("%H:%M:%S"))
     while True:
         f.write("%s | %s | %s\n" % (datetime.datetime.now().strftime("%H:%M:%S"),
                                     gpu(), last_line()))
+        harvest()
         time.sleep(30)
 
 
