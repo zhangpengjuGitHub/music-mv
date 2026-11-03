@@ -259,8 +259,10 @@ def main():
     ap.add_argument("--prefix", default="it_test")
     ap.add_argument("--width", type=int, default=832)
     ap.add_argument("--height", type=int, default=480)
-    ap.add_argument("--swap", type=int, default=36,
-                    help="WanVideoBlockSwap blocks_to_swap（T4 16G 必须拉满）")
+    ap.add_argument("--swap", type=int, default=20,
+                    help="WanVideoBlockSwap blocks_to_swap")
+    ap.add_argument("--t5dev", default="cuda:1",
+                    help="文本编码器 T5(6.27G) 放哪张卡，默认第二张")
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--workflow", default=None)
     a = ap.parse_args()
@@ -279,6 +281,16 @@ def main():
         print("swap=%d offload=on" % a.swap)
     else:
         print("WARN: 工作流里没有 WanVideoBlockSwap 节点")
+    # 组件级双卡拆分：T5 6.27G 挪到第二张卡，主卡只留 unet+MultiTalk
+    setv(122, load_device="cuda:0")
+    setv(241, load_device=a.t5dev)
+    print("unet=cuda:0  t5=%s" % a.t5dev)
+    # VHS_VideoCombine 默认只写 temp 预览，打开 save_output 才会落 output/
+    vn = names_of(oi, "VHS_VideoCombine")
+    for k, v in api.items():
+        if v["class_type"] == "VHS_VideoCombine" and "save_output" in vn:
+            v["inputs"]["save_output"] = True
+            print("node %s save_output=True" % k)
     out = os.path.join(W, "it_api.json")
     json.dump(api, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("nodes=%d -> %s" % (len(api), out))
