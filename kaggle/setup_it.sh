@@ -16,6 +16,10 @@ if [ ! -d $C ]; then
   git clone --depth 1 https://github.com/comfyanonymous/ComfyUI $C
 fi
 pip install -q -r $C/requirements.txt || echo "WARN: core deps 部分失败"
+# transformers 必须 <5：v5 的 Wav2Vec2Encoder 不再返回 hidden_states，
+# MultiTalkWav2VecEmbeds 会在 nodes.py:248 报 'NoneType' object is not subscriptable
+# （Kijai issue #2052）。v5 装上后必须降级，否则 InfiniteTalk 口型音频编码必崩。
+pip install -q "transformers==4.57.1" || echo "WARN: transformers 降级失败"
 
 echo "=== [3/5] 自定义节点（WanVideoWrapper / KJNodes / VideoHelperSuite）==="
 mkdir -p $C/custom_nodes
