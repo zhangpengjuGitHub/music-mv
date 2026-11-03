@@ -281,10 +281,15 @@ def main():
         print("swap=%d offload=on" % a.swap)
     else:
         print("WARN: 工作流里没有 WanVideoBlockSwap 节点")
-    # 组件级双卡拆分：T5 6.27G 挪到第二张卡，主卡只留 unet+MultiTalk
-    setv(122, load_device="cuda:0")
-    setv(241, load_device=a.t5dev)
-    print("unet=cuda:0  t5=%s" % a.t5dev)
+    # 组件级双卡拆分：T5 6.27G 挪到第二张卡，主卡只留 unet+MultiTalk。
+    # 注意 WanVideoTextEncodeCached（原生）没有 load_device，必须换成 MultiGPU 变体。
+    MG = "WanVideoTextEncodeCachedMultiGPU"
+    if api.get("241") and MG in oi:
+        api["241"]["class_type"] = MG
+        setv(241, load_device=a.t5dev)
+        print("unet=cuda:0  t5=%s  (%s)" % (a.t5dev, MG))
+    else:
+        print("WARN: 找不到 %s，T5 只能留在主卡" % MG)
     # VHS_VideoCombine 默认只写 temp 预览，打开 save_output 才会落 output/
     vn = names_of(oi, "VHS_VideoCombine")
     for k, v in api.items():
